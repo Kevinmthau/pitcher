@@ -1,0 +1,64 @@
+# Board Project Guide
+
+## What To Assume
+
+- This project uses the Board Unity SDK
+- Treat it as a Unity Android project, not a desktop Unity project
+- Prefer Board SDK APIs and patterns whenever Board functionality exists
+- Use the Board docs root: `https://docs.dev.board.fun`
+
+## Non-Negotiable Setup Rules
+
+- Unity `2022.3 LTS` or later
+- Platform `Android`
+- Minimum API Level `33`
+- Target API Level `33`
+- Scripting Backend `IL2CPP`
+- Architecture `ARM64`
+- Input System `1.7.0+`
+- Orientation `Landscape Left`
+- Unity 6 entry point `Activity`
+
+## First Setup Path
+
+1. Run `Board > Configure Unity Project...`
+2. Click `Apply Selected Settings`
+3. Restart the editor if prompted
+4. Open `Edit > Project Settings > Board > Input Settings`
+5. Click `Load Available Models`
+6. Download and select the correct piece model
+
+## Required Namespaces
+
+```csharp
+using Board.Core;
+using Board.Input;
+using Board.Session;
+using Board.Save;
+```
+
+Do not use:
+
+```csharp
+using Board;
+```
+
+## Core Board Rules
+
+- Use `BoardInput.GetActiveContacts(...)`
+- Track piece identity by `contactId`, not `glyphId`
+- Use `BoardUIInputModule` on the `EventSystem`
+- Use `BoardSession` for session and player flows
+- Use `BoardSaveGameManager` for save integration
+- Use `BoardApplication` for pause flow integration
+- Set `Application.targetFrameRate = 60` unless there is a documented reason not to
+
+## Debug Order
+
+1. Verify project setup
+2. Verify the piece model
+3. Verify `BoardUIInputModule`
+4. Reproduce in the simulator
+5. Reproduce on hardware
+6. Compare to the sample scene
+7. Only then conclude the bug is in gameplay code

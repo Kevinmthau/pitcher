@@ -1,0 +1,15 @@
+# {{GAME_NAME}} Claude Code Memory
+
+This repo is a Board Unity Android project.
+
+@docs/board-project-guide.md
+@docs/board-project-checklist.md
+
+## Repo Identity
+
+- Game name: `{{GAME_NAME}}`
+- Package id: `{{PACKAGE_ID}}`
+- Bundle id for launch examples: `{{BUNDLE_ID}}`
+- Piece model: `{{PIECE_MODEL}}`
+- Build helper: `{{BUILD_SCRIPT}}`
+- APK output path: `{{APK_PATH}}`

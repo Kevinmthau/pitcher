@@ -1,0 +1,40 @@
+# {{GAME_NAME}} Board Project Checklist
+
+## Project Identity
+
+- Game name: `{{GAME_NAME}}`
+- Package id: `{{PACKAGE_ID}}`
+- Bundle id: `{{BUNDLE_ID}}`
+- Piece model: `{{PIECE_MODEL}}`
+- Build helper: `{{BUILD_SCRIPT}}`
+- APK output path: `{{APK_PATH}}`
+
+## First-Run Setup
+
+- Run `Board > Configure Unity Project...`
+- Click `Apply Selected Settings`
+- Restart the editor if prompted
+- Open `Edit > Project Settings > Board > Input Settings`
+- Click `Load Available Models`
+- Download and select the correct `.tflite` piece model
+
+## Required Project Settings
+
+- Unity `2022.3 LTS` or later
+- Platform `Android`
+- Minimum API Level `33`
+- Target API Level `33`
+- Scripting Backend `IL2CPP`
+- Architecture `ARM64`
+- Input System `1.7.0+`
+- Orientation `Landscape Left`
+- Unity 6 entry point `Activity`
+
+## Runtime Checks
+
+- `Application.targetFrameRate = 60`
+- `BoardUIInputModule` is present on the active `EventSystem`
+- Piece state is keyed by `contactId`
+- UI logic does not rely on mouse-only assumptions
+- Save flow uses Board save APIs
+- Pause flow uses Board application integration

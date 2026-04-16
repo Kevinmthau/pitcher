@@ -16,27 +16,31 @@ namespace Pitchr
         private const int OrangeRobotGlyphId = 2;
         private const int PinkRobotGlyphId = 3;
         private const float MatchDurationSeconds = 60f;
+        private const float HotMatchScoreWeight = 1.2f;
+        private const float NotMatchScoreWeight = 1.2f;
+        private const float MajoritySwingMagnitude = 0.85f;
+        private const float TieSwingMagnitude = 1.25f;
         private static readonly float[] s_TrendSwapThresholds = { 40f, 20f };
         private static readonly Vector2 s_IntroHitPadding = new Vector2(36f, 36f);
         private static readonly Vector2 s_PitchHitPadding = new Vector2(34f, 22f);
         private static readonly Vector2 s_PadHitPadding = new Vector2(42f, 26f);
         private static readonly Vector2 s_ResultHitPadding = new Vector2(42f, 30f);
 
-        private static readonly Color s_Background = Hex("#131723");
-        private static readonly Color s_Banner = Hex("#1B2130");
-        private static readonly Color s_Card = Hex("#F6EEDB");
-        private static readonly Color s_CardInk = Hex("#1B1F2E");
-        private static readonly Color s_Phone = Hex("#202A3F");
-        private static readonly Color s_PhoneGlow = Hex("#2E3B59");
-        private static readonly Color s_Hot = Hex("#FF9F5A");
-        private static readonly Color s_Not = Hex("#7DB2FF");
-        private static readonly Color s_Approve = Hex("#46C975");
-        private static readonly Color s_Reject = Hex("#EB5E68");
-        private static readonly Color s_OrangeRobot = Hex("#FF9B43");
-        private static readonly Color s_PinkRobot = Hex("#FF67B0");
-        private static readonly Color s_Cream = Hex("#FFF8E8");
-        private static readonly Color s_Slate = Hex("#8593AA");
-        private static readonly Color s_Winner = Hex("#FFD563");
+        private static readonly Color s_Background = Hex("#0B1116");
+        private static readonly Color s_Banner = Hex("#12191E");
+        private static readonly Color s_Card = Hex("#F0E3C8");
+        private static readonly Color s_CardInk = Hex("#262118");
+        private static readonly Color s_Phone = Hex("#10171D");
+        private static readonly Color s_PhoneGlow = Hex("#7E95A5");
+        private static readonly Color s_Hot = Hex("#D58B52");
+        private static readonly Color s_Not = Hex("#6A9FCB");
+        private static readonly Color s_Approve = Hex("#4FA86A");
+        private static readonly Color s_Reject = Hex("#B45357");
+        private static readonly Color s_OrangeRobot = Hex("#D79157");
+        private static readonly Color s_PinkRobot = Hex("#CF6B97");
+        private static readonly Color s_Cream = Hex("#F7F0E1");
+        private static readonly Color s_Slate = Hex("#A3A8A8");
+        private static readonly Color s_Winner = Hex("#D1B57A");
         private static readonly Vector2 s_ReferenceResolution = new Vector2(1920f, 1080f);
 
         private readonly System.Random m_Random = new System.Random();
@@ -55,6 +59,10 @@ namespace Pitchr
         private Text m_HeaderSubtitle;
         private Text m_WinnerBanner;
         private Text m_ResultsPrompt;
+        private Texture2D m_TableTexture;
+        private Sprite m_NoiseSprite;
+        private Sprite m_RadialSprite;
+        private Sprite m_GlassSprite;
 
         private LaneState[] m_Lanes;
         private List<PitchTemplate> m_PitchLibrary;
@@ -72,6 +80,7 @@ namespace Pitchr
 
             m_Font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
+            BuildGeneratedArt();
             BuildStaticData();
             BuildUi();
             ResetToIntro();
@@ -98,6 +107,14 @@ namespace Pitchr
             Camera.main.clearFlags = CameraClearFlags.SolidColor;
             Camera.main.backgroundColor = s_Background;
             Camera.main.orthographic = true;
+        }
+
+        private void BuildGeneratedArt()
+        {
+            m_TableTexture = CreateWoodTexture(512, 512);
+            m_NoiseSprite = CreateSprite(CreateNoiseTexture(256, 256));
+            m_RadialSprite = CreateSprite(CreateRadialTexture(256, 256));
+            m_GlassSprite = CreateSprite(CreateGlassTexture(256, 256));
         }
 
         private void BuildStaticData()
@@ -162,21 +179,31 @@ namespace Pitchr
             var canvasRect = canvasObject.GetComponent<RectTransform>();
             Stretch(canvasRect);
 
-            CreatePanel(canvasRect, "Backdrop", Vector2.zero, s_ReferenceResolution, s_Background);
-            CreateBand(canvasRect, "HeaderBand", new Vector2(0f, 460f), new Vector2(1920f, 180f), s_Banner);
-            CreateBand(canvasRect, "FooterBand", new Vector2(0f, -470f), new Vector2(1920f, 140f), Hex("#0E121B"));
+            CreateTiledRawImage(canvasRect, "Tabletop", m_TableTexture, Color.white, new Rect(0f, 0f, 7.6f, 4.2f));
+            CreatePanel(canvasRect, "BackdropTint", Vector2.zero, s_ReferenceResolution, new Color(s_Background.r, s_Background.g, s_Background.b, 0.46f));
+            CreateImage(canvasRect, "OverheadGlow", new Vector2(0f, 44f), new Vector2(1720f, 1000f), new Color(1f, 0.9f, 0.72f, 0.14f), m_RadialSprite);
 
-            m_HeaderTitle = CreateText(canvasRect, "HeaderTitle", "PITCHR", 72, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 490f), new Vector2(820f, 82f));
+            var productionMat = CreatePanel(canvasRect, "ProductionMat", new Vector2(0f, -26f), new Vector2(1760f, 874f), Hex("#202B31"));
+            StyleDeskMat(productionMat);
+            CreateImage(productionMat, "LeftStudioGlow", new Vector2(-430f, 28f), new Vector2(760f, 700f), WithAlpha(s_OrangeRobot, 0.11f), m_RadialSprite);
+            CreateImage(productionMat, "RightStudioGlow", new Vector2(430f, 28f), new Vector2(760f, 700f), WithAlpha(s_PinkRobot, 0.11f), m_RadialSprite);
+            CreatePanel(productionMat, "CenterDivider", new Vector2(0f, 10f), new Vector2(2f, 760f), new Color(1f, 1f, 1f, 0.06f));
+
+            var headerPlaque = CreatePanel(canvasRect, "HeaderPlaque", new Vector2(0f, 468f), new Vector2(1460f, 136f), s_Banner);
+            ApplyMetalPanelStyle(headerPlaque, s_Winner, s_Banner);
+            CreateBand(canvasRect, "FooterBand", new Vector2(0f, -494f), new Vector2(1680f, 58f), new Color(0f, 0f, 0f, 0.2f));
+
+            m_HeaderTitle = CreateText(headerPlaque, "HeaderTitle", "PITCHR", 64, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 18f), new Vector2(820f, 68f));
             m_HeaderSubtitle = CreateText(
-                canvasRect,
+                headerPlaque,
                 "HeaderSubtitle",
                 "Pink Robot stamps movie pitches. Dip in ink, then make the call.",
-                24,
+                22,
                 FontStyle.Normal,
                 TextAnchor.MiddleCenter,
                 s_Slate,
-                new Vector2(0f, 438f),
-                new Vector2(1100f, 40f));
+                new Vector2(0f, -24f),
+                new Vector2(1180f, 34f));
 
             m_IntroGroup = CreateGroup(canvasRect, "Intro");
             m_GameplayGroup = CreateGroup(canvasRect, "Gameplay");
@@ -189,8 +216,10 @@ namespace Pitchr
 
         private void BuildIntro(RectTransform parent)
         {
-            CreateText(parent, "IntroTitle", "STAMP BOTH START CARDS TO OPEN THE PITCH MEETING", 32, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 260f), new Vector2(1120f, 50f));
-            CreateText(parent, "IntroBody", "Use the Pink Robot stamper. Gameplay is simultaneous: dip in green to approve, dip in red to pass, then stamp the pitch card.", 24, FontStyle.Normal, TextAnchor.MiddleCenter, s_Slate, new Vector2(0f, 204f), new Vector2(1240f, 80f));
+            var introRibbon = CreatePanel(parent, "IntroRibbon", new Vector2(0f, 252f), new Vector2(1080f, 108f), Hex("#11181D"));
+            ApplyMetalPanelStyle(introRibbon, s_Winner, Hex("#11181D"));
+            CreateText(introRibbon, "IntroTitle", "STAMP BOTH READY CARDS TO OPEN THE PITCH MEETING", 30, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 18f), new Vector2(980f, 34f));
+            CreateText(introRibbon, "IntroBody", "Each studio uses its own robot. Once both ready cards are stamped, the slate opens and the pitch review begins.", 22, FontStyle.Normal, TextAnchor.MiddleCenter, s_Slate, new Vector2(0f, -20f), new Vector2(980f, 46f));
 
             m_Lanes = new[]
             {
@@ -204,12 +233,14 @@ namespace Pitchr
 
         private void BuildIntroLane(RectTransform parent, LaneState lane, float x)
         {
-            lane.IntroCard = CreatePanel(parent, $"{lane.Label}IntroCard", new Vector2(x, -18f), new Vector2(520f, 320f), Hex("#212B40"));
-            AddOutline(lane.IntroCard.gameObject, lane.id == LaneId.Left ? s_Hot : s_Not);
+            var accent = lane.id == LaneId.Left ? s_Hot : s_Not;
+            lane.IntroCard = CreatePanel(parent, $"{lane.Label}IntroCard", new Vector2(x, -18f), new Vector2(520f, 320f), s_Card);
+            ApplyPaperCardStyle(lane.IntroCard, accent);
 
-            CreateText(lane.IntroCard, "LaneLabel", lane.Label, 20, FontStyle.Bold, TextAnchor.UpperCenter, s_Winner, new Vector2(0f, 118f), new Vector2(420f, 26f));
-            CreateText(lane.IntroCard, "RobotLabel", $"STAMPER: {lane.StamperName}", 28, FontStyle.Bold, TextAnchor.MiddleCenter, lane.StamperColor, new Vector2(0f, 44f), new Vector2(420f, 40f));
-            CreateText(lane.IntroCard, "IntroAction", "Stamp this card to lock in.\nBoth studios must be ready.", 24, FontStyle.Normal, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, -38f), new Vector2(420f, 100f));
+            CreateText(lane.IntroCard, "LaneLabel", lane.Label, 18, FontStyle.Bold, TextAnchor.UpperCenter, s_Slate, new Vector2(0f, 116f), new Vector2(420f, 24f));
+            CreateText(lane.IntroCard, "IntroBadge", "READY CARD", 17, FontStyle.Bold, TextAnchor.MiddleCenter, accent, new Vector2(0f, 80f), new Vector2(240f, 24f));
+            CreateText(lane.IntroCard, "RobotLabel", $"STAMPER: {lane.StamperName}", 28, FontStyle.Bold, TextAnchor.MiddleCenter, lane.StamperColor, new Vector2(0f, 34f), new Vector2(420f, 40f));
+            CreateText(lane.IntroCard, "IntroAction", "Stamp this card to lock the studio into the meeting.\nBoth studios must be ready before the slate opens.", 22, FontStyle.Normal, TextAnchor.MiddleCenter, s_CardInk, new Vector2(0f, -42f), new Vector2(430f, 116f));
 
             lane.IntroStamp = CreateText(lane.IntroCard, "ReadyStamp", string.Empty, 42, FontStyle.Bold, TextAnchor.MiddleCenter, s_PinkRobot, Vector2.zero, new Vector2(300f, 80f));
             lane.IntroStamp.gameObject.SetActive(false);
@@ -217,7 +248,9 @@ namespace Pitchr
 
         private void BuildGameplay(RectTransform parent)
         {
-            CreateText(parent, "GameplayPrompt", "DIP THE ROBOT IN INK, THEN STAMP THE PITCH", 28, FontStyle.Bold, TextAnchor.MiddleCenter, s_Winner, new Vector2(0f, 356f), new Vector2(1200f, 40f));
+            var gameplayRibbon = CreatePanel(parent, "GameplayRibbon", new Vector2(0f, 356f), new Vector2(940f, 74f), Hex("#11181D"));
+            ApplyMetalPanelStyle(gameplayRibbon, s_Winner, Hex("#11181D"));
+            CreateText(gameplayRibbon, "GameplayPrompt", "DIP THE ROBOT IN INK, THEN STAMP THE PITCH", 27, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, Vector2.zero, new Vector2(860f, 32f));
 
             BuildGameplayLane(parent, m_Lanes[0], -470f);
             BuildGameplayLane(parent, m_Lanes[1], 470f);
@@ -236,7 +269,7 @@ namespace Pitchr
             lane.Root = CreateContainer(parent, $"{lane.Label}Root", new Vector2(x, laneRootY));
 
             lane.PhonePanel = CreatePanel(lane.Root, "Phone", new Vector2(0f, 360f), new Vector2(360f, 220f), s_Phone);
-            AddOutline(lane.PhonePanel.gameObject, s_PhoneGlow);
+            ApplyGlassPanelStyle(lane.PhonePanel, lane.StamperColor);
             CreateText(lane.PhonePanel, "PhoneLabel", lane.Label, 14, FontStyle.Bold, TextAnchor.UpperCenter, s_Slate, new Vector2(0f, 92f), new Vector2(240f, 20f));
             CreateText(lane.PhonePanel, "RobotBadge", lane.StamperName, 16, FontStyle.Bold, TextAnchor.MiddleCenter, lane.StamperColor, new Vector2(0f, 68f), new Vector2(240f, 20f));
             lane.TimerText = CreateText(lane.PhonePanel, "Timer", "1:00", 36, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 32f), new Vector2(240f, 44f));
@@ -244,63 +277,69 @@ namespace Pitchr
             lane.NotificationHeadline = CreateText(lane.PhonePanel, "Headline", "Waiting for the first big release...", 15, FontStyle.Bold, TextAnchor.UpperLeft, s_Cream, new Vector2(0f, -40f), new Vector2(300f, 32f));
             lane.NotificationBody = CreateText(lane.PhonePanel, "Body", "Approvals will send box-office notes here.", 13, FontStyle.Normal, TextAnchor.UpperLeft, s_Slate, new Vector2(0f, -80f), new Vector2(300f, 48f));
 
-            lane.HotPanel = CreatePanel(lane.Root, "HotPanel", new Vector2(-128f, trendPanelY), trendPanelSize, Hex("#3A2A21"));
-            AddOutline(lane.HotPanel.gameObject, s_Hot);
+            lane.HotPanel = CreatePanel(lane.Root, "HotPanel", new Vector2(-128f, trendPanelY), trendPanelSize, Hex("#4A3426"));
+            ApplyTrendPanelStyle(lane.HotPanel, s_Hot, Hex("#4A3426"));
             lane.HotText = CreateText(lane.HotPanel, "HotText", string.Empty, 19, FontStyle.Bold, TextAnchor.UpperLeft, s_Cream, new Vector2(0f, 0f), new Vector2(188f, 92f));
+            ConfigureMultiLineBestFit(lane.HotText, minSize: 14, maxSize: 19);
 
-            lane.NotPanel = CreatePanel(lane.Root, "NotPanel", new Vector2(128f, trendPanelY), trendPanelSize, Hex("#1C2740"));
-            AddOutline(lane.NotPanel.gameObject, s_Not);
+            lane.NotPanel = CreatePanel(lane.Root, "NotPanel", new Vector2(128f, trendPanelY), trendPanelSize, Hex("#233545"));
+            ApplyTrendPanelStyle(lane.NotPanel, s_Not, Hex("#233545"));
             lane.NotText = CreateText(lane.NotPanel, "NotText", string.Empty, 19, FontStyle.Bold, TextAnchor.UpperLeft, s_Cream, new Vector2(0f, 0f), new Vector2(188f, 92f));
+            ConfigureMultiLineBestFit(lane.NotText, minSize: 14, maxSize: 19);
 
             lane.PitchCard = CreatePanel(lane.Root, "PitchCard", new Vector2(0f, pitchCardY), pitchCardSize, s_Card);
             lane.PitchCardHomePosition = lane.PitchCard.anchoredPosition;
-            AddOutline(lane.PitchCard.gameObject, s_Cream);
+            ApplyPaperCardStyle(lane.PitchCard, lane.StamperColor);
             lane.PitchCanvasGroup = lane.PitchCard.gameObject.AddComponent<CanvasGroup>();
-            lane.PitchTitle = CreateText(lane.PitchCard, "Title", "Pitch Title", 34, FontStyle.Bold, TextAnchor.UpperCenter, s_CardInk, new Vector2(0f, 120f), new Vector2(460f, 44f));
+            CreateText(lane.PitchCard, "PitchLabel", "CURRENT PITCH", 16, FontStyle.Bold, TextAnchor.UpperCenter, s_Slate, new Vector2(0f, 138f), new Vector2(240f, 22f));
+            lane.PitchTitle = CreateText(lane.PitchCard, "Title", "Pitch Title", 34, FontStyle.Bold, TextAnchor.UpperCenter, s_CardInk, new Vector2(0f, 104f), new Vector2(460f, 44f));
             ConfigureSingleLineBestFit(lane.PitchTitle, minSize: 20, maxSize: 34);
-            lane.PitchTags = CreateText(lane.PitchCard, "Tags", "TAGS", 20, FontStyle.Bold, TextAnchor.UpperCenter, s_Slate, new Vector2(0f, 76f), new Vector2(500f, 26f));
-            lane.PitchLogline = CreateText(lane.PitchCard, "Logline", "Pitch logline goes here.", 24, FontStyle.Normal, TextAnchor.UpperLeft, s_CardInk, new Vector2(0f, -8f), new Vector2(460f, 106f));
-            lane.ActionText = CreateText(lane.PitchCard, "Action", string.Empty, 20, FontStyle.Bold, TextAnchor.LowerCenter, s_CardInk, new Vector2(0f, -112f), new Vector2(380f, 54f));
+            lane.PitchTags = CreateText(lane.PitchCard, "Tags", "TAGS", 18, FontStyle.Bold, TextAnchor.UpperCenter, s_Slate, new Vector2(0f, 68f), new Vector2(500f, 24f));
+            lane.PitchLogline = CreateText(lane.PitchCard, "Logline", "Pitch logline goes here.", 24, FontStyle.Normal, TextAnchor.UpperLeft, s_CardInk, new Vector2(0f, -10f), new Vector2(460f, 108f));
+            lane.ActionText = CreateText(lane.PitchCard, "Action", string.Empty, 20, FontStyle.Bold, TextAnchor.LowerCenter, s_CardInk, new Vector2(0f, -114f), new Vector2(400f, 52f));
             lane.StampText = CreateText(lane.PitchCard, "Stamp", string.Empty, 28, FontStyle.Bold, TextAnchor.MiddleCenter, s_Approve, Vector2.zero, new Vector2(320f, 80f));
             lane.StampText.gameObject.SetActive(false);
 
-            lane.RejectPad = CreatePanel(lane.Root, "RejectPad", new Vector2(-128f, padY), padSize, Hex("#421C27"));
-            lane.RejectPadImage = lane.RejectPad.GetComponent<Image>();
-            AddOutline(lane.RejectPad.gameObject, s_Reject);
-            CreateText(lane.RejectPad, "RejectLabel", "RED INK", 28, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 16f), new Vector2(160f, 32f));
-            CreateText(lane.RejectPad, "RejectHint", "PASS", 20, FontStyle.Bold, TextAnchor.MiddleCenter, s_Reject, new Vector2(0f, -22f), new Vector2(160f, 24f));
+            lane.RejectPad = CreatePanel(lane.Root, "RejectPad", new Vector2(-128f, padY), padSize, Hex("#171616"));
+            ApplyInkPadStyle(lane.RejectPad, s_Reject, out lane.RejectPadImage);
+            CreateText(lane.RejectPad, "RejectLabel", "RED INK", 24, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, -18f), new Vector2(170f, 28f));
+            CreateText(lane.RejectPad, "RejectHint", "PASS", 18, FontStyle.Bold, TextAnchor.MiddleCenter, s_Reject, new Vector2(0f, -46f), new Vector2(160f, 22f));
 
-            lane.ApprovePad = CreatePanel(lane.Root, "ApprovePad", new Vector2(128f, padY), padSize, Hex("#173123"));
-            lane.ApprovePadImage = lane.ApprovePad.GetComponent<Image>();
-            AddOutline(lane.ApprovePad.gameObject, s_Approve);
-            CreateText(lane.ApprovePad, "ApproveLabel", "GREEN INK", 28, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 16f), new Vector2(160f, 32f));
-            CreateText(lane.ApprovePad, "ApproveHint", "GREENLIGHT", 20, FontStyle.Bold, TextAnchor.MiddleCenter, s_Approve, new Vector2(0f, -22f), new Vector2(160f, 24f));
+            lane.ApprovePad = CreatePanel(lane.Root, "ApprovePad", new Vector2(128f, padY), padSize, Hex("#171616"));
+            ApplyInkPadStyle(lane.ApprovePad, s_Approve, out lane.ApprovePadImage);
+            CreateText(lane.ApprovePad, "ApproveLabel", "GREEN INK", 24, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, -18f), new Vector2(170f, 28f));
+            CreateText(lane.ApprovePad, "ApproveHint", "GREENLIGHT", 18, FontStyle.Bold, TextAnchor.MiddleCenter, s_Approve, new Vector2(0f, -46f), new Vector2(180f, 22f));
         }
 
         private void BuildResults(RectTransform parent)
         {
-            m_WinnerBanner = CreateText(parent, "WinnerBanner", string.Empty, 42, FontStyle.Bold, TextAnchor.MiddleCenter, s_Winner, new Vector2(0f, 280f), new Vector2(1200f, 54f));
-            m_ResultsPrompt = CreateText(parent, "ResultsPrompt", "Stamp PLAY AGAIN to rerun the pitch meeting, or EXIT to close the vignette.", 24, FontStyle.Normal, TextAnchor.MiddleCenter, s_Slate, new Vector2(0f, 236f), new Vector2(1360f, 40f));
+            m_WinnerBanner = CreateText(parent, "WinnerBanner", string.Empty, 42, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 284f), new Vector2(1200f, 54f));
+
+            var resultsRibbon = CreatePanel(parent, "ResultsRibbon", new Vector2(0f, 236f), new Vector2(980f, 74f), Hex("#11181D"));
+            ApplyMetalPanelStyle(resultsRibbon, s_Winner, Hex("#11181D"));
+            m_ResultsPrompt = CreateText(resultsRibbon, "ResultsPrompt", "Stamp PLAY AGAIN to rerun the pitch meeting, or EXIT to close the vignette.", 22, FontStyle.Normal, TextAnchor.MiddleCenter, s_Slate, Vector2.zero, new Vector2(900f, 32f));
 
             BuildResultsLane(parent, m_Lanes[0], -470f);
             BuildResultsLane(parent, m_Lanes[1], 470f);
 
             m_PlayAgainZone = CreatePanel(parent, "PlayAgainZone", new Vector2(-180f, -320f), new Vector2(320f, 150f), Hex("#163525"));
-            AddOutline(m_PlayAgainZone.gameObject, s_Approve);
+            ApplyMetalPanelStyle(m_PlayAgainZone, s_Approve, Hex("#163525"));
             CreateText(m_PlayAgainZone, "PlayAgain", "PLAY AGAIN", 34, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 14f), new Vector2(220f, 44f));
             CreateText(m_PlayAgainZone, "PlayAgainHint", "Stamp with the Pink Robot", 20, FontStyle.Normal, TextAnchor.MiddleCenter, s_Approve, new Vector2(0f, -26f), new Vector2(260f, 28f));
 
             m_ExitZone = CreatePanel(parent, "ExitZone", new Vector2(180f, -320f), new Vector2(320f, 150f), Hex("#381A22"));
-            AddOutline(m_ExitZone.gameObject, s_Reject);
+            ApplyMetalPanelStyle(m_ExitZone, s_Reject, Hex("#381A22"));
             CreateText(m_ExitZone, "Exit", "EXIT", 34, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 14f), new Vector2(220f, 44f));
             CreateText(m_ExitZone, "ExitHint", "Stamp to close the app", 20, FontStyle.Normal, TextAnchor.MiddleCenter, s_Reject, new Vector2(0f, -26f), new Vector2(220f, 28f));
         }
 
         private void BuildResultsLane(RectTransform parent, LaneState lane, float x)
         {
-            lane.ResultsCard = CreatePanel(parent, $"{lane.Label}ResultsCard", new Vector2(x, -20f), new Vector2(520f, 430f), Hex("#212B40"));
-            AddOutline(lane.ResultsCard.gameObject, lane.id == LaneId.Left ? s_Hot : s_Not);
-            lane.ResultsText = CreateText(lane.ResultsCard, "ResultsText", string.Empty, 23, FontStyle.Normal, TextAnchor.UpperLeft, s_Cream, new Vector2(0f, 0f), new Vector2(420f, 330f));
+            var accent = lane.id == LaneId.Left ? s_Hot : s_Not;
+            lane.ResultsCard = CreatePanel(parent, $"{lane.Label}ResultsCard", new Vector2(x, -20f), new Vector2(520f, 430f), s_Card);
+            ApplyPaperCardStyle(lane.ResultsCard, accent);
+            CreateText(lane.ResultsCard, "ResultsLabel", lane.Label, 18, FontStyle.Bold, TextAnchor.UpperCenter, s_Slate, new Vector2(0f, 158f), new Vector2(320f, 22f));
+            lane.ResultsText = CreateText(lane.ResultsCard, "ResultsText", string.Empty, 23, FontStyle.Normal, TextAnchor.UpperLeft, s_CardInk, new Vector2(0f, -8f), new Vector2(420f, 314f));
         }
 
         private void ResetToIntro()
@@ -341,8 +380,7 @@ namespace Pitchr
             foreach (var lane in m_Lanes)
             {
                 lane.ResetForMatch(ShuffleDeck());
-                ApplyTrendText(lane);
-                AdvancePitch(lane, isInitialPitch: true);
+                AdvancePitch(lane);
                 UpdateTimerAndScore(lane);
                 UpdateInkPresentation(lane);
             }
@@ -385,7 +423,8 @@ namespace Pitchr
                 while (lane.NextTrendThresholdIndex < s_TrendSwapThresholds.Length &&
                        m_RemainingTime <= s_TrendSwapThresholds[lane.NextTrendThresholdIndex])
                 {
-                    lane.PendingTrendSwaps++;
+                    lane.CurrentTrendIndex = (lane.CurrentTrendIndex + 1) % m_TrendPacks.Count;
+                    ApplyTrendText(lane);
                     lane.NextTrendThresholdIndex++;
                 }
 
@@ -562,7 +601,7 @@ namespace Pitchr
 
             if (!m_TimerExpired)
             {
-                AdvancePitch(lane, isInitialPitch: false);
+                AdvancePitch(lane);
                 UpdateInkPresentation(lane);
             }
 
@@ -588,14 +627,8 @@ namespace Pitchr
             }
         }
 
-        private void AdvancePitch(LaneState lane, bool isInitialPitch)
+        private void AdvancePitch(LaneState lane)
         {
-            if (!isInitialPitch && lane.PendingTrendSwaps > 0)
-            {
-                lane.CurrentTrendIndex = (lane.CurrentTrendIndex + 1) % m_TrendPacks.Count;
-                lane.PendingTrendSwaps--;
-            }
-
             lane.CurrentPitch = DrawPitch(lane);
             ApplyTrendText(lane);
             ApplyPitchText(lane);
@@ -635,41 +668,29 @@ namespace Pitchr
             var hotCount = hotMatches.Count;
             var notCount = notMatches.Count;
 
-            var swing = RandomRange(-0.8f, 0.8f);
-            var score = (hotCount * 1.35f) - (notCount * 1.45f) + swing;
+            var swingMagnitude = hotCount == notCount ? TieSwingMagnitude : MajoritySwingMagnitude;
+            var swing = RandomRange(-swingMagnitude, swingMagnitude);
+            var score = (hotCount * HotMatchScoreWeight) - (notCount * NotMatchScoreWeight) + swing;
 
-            OutcomeTone tone;
-            if (score >= 0.85f)
+            var tone = score >= 0f ? OutcomeTone.Success : OutcomeTone.Failure;
+
+            var magnitude = 8f + RandomRange(0f, 24f) + (Mathf.Abs(score) * 19f);
+            if (score >= 0f)
             {
-                tone = OutcomeTone.Success;
-            }
-            else if (score <= -0.7f)
-            {
-                tone = OutcomeTone.Failure;
+                magnitude += (hotCount * 21f) + (Mathf.Max(0, hotCount - notCount) * 12f) - (notCount * 4f);
             }
             else
             {
-                tone = OutcomeTone.Meh;
+                magnitude += (notCount * 21f) + (Mathf.Max(0, notCount - hotCount) * 12f) - (hotCount * 4f);
             }
 
-            float boxOfficeMillions;
-            switch (tone)
+            var boxOfficeMillions = Mathf.Round(Mathf.Max(2f, magnitude) * 10f) / 10f;
+            if (score < 0f)
             {
-                case OutcomeTone.Success:
-                    boxOfficeMillions = 26f + (hotCount * 28f) + Mathf.Max(0f, score) * 32f + RandomRange(0f, 58f);
-                    break;
-                case OutcomeTone.Failure:
-                    boxOfficeMillions = -(18f + (notCount * 26f) + Mathf.Abs(Mathf.Min(0f, score)) * 34f + RandomRange(0f, 52f));
-                    break;
-                default:
-                    var mehBase = 4f + Mathf.Abs(score) * 10f + RandomRange(0f, 18f);
-                    boxOfficeMillions = score >= 0f ? mehBase : -mehBase;
-                    break;
+                boxOfficeMillions *= -1f;
             }
 
-            boxOfficeMillions = Mathf.Round(boxOfficeMillions * 10f) / 10f;
-
-            var stars = 3f + (score * 0.9f) + RandomRange(-0.25f, 0.25f);
+            var stars = 3f + (score * 0.85f) + RandomRange(-0.35f, 0.35f);
             stars = Mathf.Clamp(Mathf.Round(stars * 2f) / 2f, 0.5f, 5f);
 
             return new PitchOutcome(
@@ -805,8 +826,8 @@ namespace Pitchr
         private void ApplyTrendText(LaneState lane)
         {
             var pack = m_TrendPacks[lane.CurrentTrendIndex];
-            lane.HotText.text = $"HOT\n{pack.Hots[0]}\n{pack.Hots[1]}\n{pack.Hots[2]}";
-            lane.NotText.text = $"NOT\n{pack.Nots[0]}\n{pack.Nots[1]}\n{pack.Nots[2]}";
+            lane.HotText.text = $"HOTS\n{pack.Hots[0]}\n{pack.Hots[1]}\n{pack.Hots[2]}";
+            lane.NotText.text = $"NOTS\n{pack.Nots[0]}\n{pack.Nots[1]}\n{pack.Nots[2]}";
         }
 
         private void ApplyPitchText(LaneState lane)
@@ -825,12 +846,13 @@ namespace Pitchr
 
         private void UpdateInkPresentation(LaneState lane)
         {
-            lane.ApprovePadImage.color = lane.LoadedInk == InkColor.Approve ? Hex("#26563A") : Hex("#173123");
-            lane.RejectPadImage.color = lane.LoadedInk == InkColor.Reject ? Hex("#6A2431") : Hex("#421C27");
+            lane.ApprovePadImage.color = lane.LoadedInk == InkColor.Approve ? Hex("#3D8A59") : Hex("#193423");
+            lane.RejectPadImage.color = lane.LoadedInk == InkColor.Reject ? Hex("#8C3138") : Hex("#3C1E25");
 
             if (m_TimerExpired)
             {
                 lane.ActionText.text = "Time is up. Finalizing the slate.";
+                lane.ActionText.color = s_Slate;
                 return;
             }
 
@@ -854,8 +876,6 @@ namespace Pitchr
         private string BuildResultsSummary(LaneState lane)
         {
             var builder = new StringBuilder();
-            builder.AppendLine(lane.Label);
-            builder.AppendLine();
             builder.AppendLine($"Approved: {lane.ApprovedOutcomes.Count}");
             builder.AppendLine($"Net Profit: {FormatMoney(lane.TotalProfitMillions)}");
             builder.AppendLine($"Avg. Rating: {AverageStars(lane):0.0}/5");
@@ -969,7 +989,7 @@ namespace Pitchr
             localPoint.y = Mathf.Clamp(localPoint.y, rect.yMin + 50f, rect.yMax - 50f);
 
             stampText.text = label;
-            stampText.color = color;
+            stampText.color = WithAlpha(color, 0.9f);
             stampText.rectTransform.anchoredPosition = localPoint;
             stampText.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -orientationRadians * Mathf.Rad2Deg);
             stampText.gameObject.SetActive(true);
@@ -1030,6 +1050,118 @@ namespace Pitchr
             return $"{(millions >= 0f ? "+" : "-")}${Mathf.Abs(millions):0.0}M";
         }
 
+        private void StyleDeskMat(RectTransform mat)
+        {
+            var image = mat.GetComponent<Image>();
+            image.color = Hex("#202C32");
+            image.sprite = m_NoiseSprite;
+
+            AddDropShadow(mat.gameObject, new Color(0f, 0f, 0f, 0.36f), new Vector2(0f, -18f));
+            AddOutline(mat.gameObject, new Color(s_PhoneGlow.r, s_PhoneGlow.g, s_PhoneGlow.b, 0.16f));
+
+            CreateInsetImage(mat, "MatSheen", 16f, 16f, 16f, 16f, new Color(1f, 1f, 1f, 0.05f), m_GlassSprite);
+            CreatePanel(mat, "MatTopEdge", new Vector2(0f, mat.sizeDelta.y * 0.5f - 10f), new Vector2(mat.sizeDelta.x - 120f, 2f), new Color(1f, 1f, 1f, 0.08f));
+            CreatePanel(mat, "MatBottomEdge", new Vector2(0f, -mat.sizeDelta.y * 0.5f + 10f), new Vector2(mat.sizeDelta.x - 120f, 2f), new Color(0f, 0f, 0f, 0.18f));
+        }
+
+        private void ApplyMetalPanelStyle(RectTransform panel, Color accent, Color baseColor)
+        {
+            var image = panel.GetComponent<Image>();
+            image.color = baseColor;
+            image.sprite = m_NoiseSprite;
+
+            AddDropShadow(panel.gameObject, new Color(0f, 0f, 0f, 0.32f), new Vector2(0f, -12f));
+            AddOutline(panel.gameObject, new Color(accent.r, accent.g, accent.b, 0.22f));
+
+            CreateInsetImage(panel, "PanelSheen", 10f, 10f, 10f, 10f, new Color(1f, 1f, 1f, 0.06f), m_GlassSprite);
+            CreatePanel(panel, "TopAccent", new Vector2(0f, panel.sizeDelta.y * 0.5f - 10f), new Vector2(panel.sizeDelta.x - 42f, 3f), new Color(accent.r, accent.g, accent.b, 0.62f));
+            CreatePanel(panel, "BottomShadow", new Vector2(0f, -panel.sizeDelta.y * 0.5f + 10f), new Vector2(panel.sizeDelta.x - 42f, 2f), new Color(0f, 0f, 0f, 0.22f));
+        }
+
+        private void ApplyPaperCardStyle(RectTransform card, Color accent)
+        {
+            var image = card.GetComponent<Image>();
+            image.color = s_Card;
+            image.sprite = m_NoiseSprite;
+
+            AddDropShadow(card.gameObject, new Color(0.08f, 0.05f, 0.03f, 0.42f), new Vector2(0f, -16f));
+            AddOutline(card.gameObject, new Color(accent.r, accent.g, accent.b, 0.2f));
+
+            var size = card.sizeDelta;
+            CreatePanel(card, "AccentStrip", new Vector2(0f, size.y * 0.5f - 18f), new Vector2(size.x - 56f, 8f), new Color(accent.r, accent.g, accent.b, 0.76f));
+            CreatePanel(card, "BottomRule", new Vector2(0f, -size.y * 0.5f + 20f), new Vector2(size.x - 56f, 2f), new Color(0f, 0f, 0f, 0.08f));
+
+            var leftTape = CreatePanel(card, "LeftTape", new Vector2(-size.x * 0.28f, size.y * 0.5f - 12f), new Vector2(72f, 18f), new Color(1f, 0.98f, 0.86f, 0.34f));
+            leftTape.localRotation = Quaternion.Euler(0f, 0f, -6f);
+
+            var rightTape = CreatePanel(card, "RightTape", new Vector2(size.x * 0.28f, size.y * 0.5f - 12f), new Vector2(72f, 18f), new Color(1f, 0.98f, 0.86f, 0.34f));
+            rightTape.localRotation = Quaternion.Euler(0f, 0f, 7f);
+        }
+
+        private void ApplyGlassPanelStyle(RectTransform panel, Color accent)
+        {
+            var image = panel.GetComponent<Image>();
+            image.color = s_Phone;
+            image.sprite = m_NoiseSprite;
+
+            AddDropShadow(panel.gameObject, new Color(0f, 0f, 0f, 0.42f), new Vector2(0f, -16f));
+            AddOutline(panel.gameObject, new Color(accent.r, accent.g, accent.b, 0.16f));
+
+            var size = panel.sizeDelta;
+            var screen = CreatePanel(panel, "Screen", Vector2.zero, size - new Vector2(28f, 28f), Hex("#17212A"));
+            var screenImage = screen.GetComponent<Image>();
+            screenImage.sprite = m_GlassSprite;
+
+            CreateImage(screen, "ScreenGlow", Vector2.zero, screen.sizeDelta, new Color(1f, 1f, 1f, 0.12f), m_GlassSprite);
+
+            var noteTray = CreatePanel(panel, "NoteTray", new Vector2(0f, -72f), new Vector2(300f, 92f), new Color(1f, 1f, 1f, 0.05f));
+            noteTray.GetComponent<Image>().sprite = m_GlassSprite;
+
+            CreatePanel(panel, "Speaker", new Vector2(0f, size.y * 0.5f - 16f), new Vector2(72f, 6f), new Color(1f, 1f, 1f, 0.08f));
+            CreateImage(panel, "StatusLamp", new Vector2(size.x * 0.5f - 22f, size.y * 0.5f - 18f), new Vector2(12f, 12f), new Color(accent.r, accent.g, accent.b, 0.9f), m_RadialSprite);
+        }
+
+        private void ApplyTrendPanelStyle(RectTransform panel, Color accent, Color baseColor)
+        {
+            var image = panel.GetComponent<Image>();
+            image.color = baseColor;
+            image.sprite = m_NoiseSprite;
+
+            AddDropShadow(panel.gameObject, new Color(0f, 0f, 0f, 0.3f), new Vector2(0f, -10f));
+            AddOutline(panel.gameObject, new Color(accent.r, accent.g, accent.b, 0.24f));
+
+            var size = panel.sizeDelta;
+            CreatePanel(panel, "TrendTopBar", new Vector2(0f, size.y * 0.5f - 14f), new Vector2(size.x - 26f, 6f), new Color(accent.r, accent.g, accent.b, 0.76f));
+            CreateImage(panel, "TrendPin", new Vector2(0f, size.y * 0.5f - 18f), new Vector2(14f, 14f), new Color(s_Winner.r, s_Winner.g, s_Winner.b, 0.85f), m_RadialSprite);
+            CreateInsetImage(panel, "TrendSheen", 10f, 10f, 10f, 10f, new Color(1f, 1f, 1f, 0.04f), m_GlassSprite);
+        }
+
+        private void ApplyInkPadStyle(RectTransform panel, Color accent, out Image inkSurface)
+        {
+            var image = panel.GetComponent<Image>();
+            image.color = Hex("#171616");
+            image.sprite = m_NoiseSprite;
+
+            AddDropShadow(panel.gameObject, new Color(0f, 0f, 0f, 0.34f), new Vector2(0f, -12f));
+            AddOutline(panel.gameObject, new Color(accent.r, accent.g, accent.b, 0.24f));
+
+            var size = panel.sizeDelta;
+            var tray = CreatePanel(panel, "Tray", new Vector2(0f, 24f), new Vector2(size.x - 36f, 84f), Hex("#0E1012"));
+            tray.GetComponent<Image>().sprite = m_NoiseSprite;
+
+            var well = CreatePanel(panel, "InkWell", new Vector2(0f, 24f), new Vector2(size.x - 60f, 56f), Color.black);
+            inkSurface = well.GetComponent<Image>();
+            inkSurface.sprite = m_RadialSprite;
+
+            CreateImage(well, "InkSheen", Vector2.zero, well.sizeDelta, new Color(1f, 1f, 1f, 0.08f), m_GlassSprite);
+            CreatePanel(panel, "LabelPlate", new Vector2(0f, -38f), new Vector2(size.x - 48f, 30f), new Color(1f, 1f, 1f, 0.04f));
+        }
+
+        private static Color WithAlpha(Color color, float alpha)
+        {
+            return new Color(color.r, color.g, color.b, alpha);
+        }
+
         private static RectTransform CreateGroup(Transform parent, string name)
         {
             var go = new GameObject(name, typeof(RectTransform));
@@ -1057,6 +1189,21 @@ namespace Pitchr
             return CreatePanel(parent, name, anchoredPosition, sizeDelta, color);
         }
 
+        private static RawImage CreateTiledRawImage(Transform parent, string name, Texture texture, Color color, Rect uvRect)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(RawImage));
+            var rect = go.GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            Stretch(rect);
+
+            var rawImage = go.GetComponent<RawImage>();
+            rawImage.texture = texture;
+            rawImage.color = color;
+            rawImage.uvRect = uvRect;
+            rawImage.raycastTarget = false;
+            return rawImage;
+        }
+
         private static RectTransform CreatePanel(Transform parent, string name, Vector2 anchoredPosition, Vector2 sizeDelta, Color color)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image));
@@ -1073,6 +1220,31 @@ namespace Pitchr
             image.raycastTarget = false;
 
             return rect;
+        }
+
+        private static Image CreateImage(Transform parent, string name, Vector2 anchoredPosition, Vector2 sizeDelta, Color color, Sprite sprite)
+        {
+            var rect = CreatePanel(parent, name, anchoredPosition, sizeDelta, color);
+            var image = rect.GetComponent<Image>();
+            image.sprite = sprite;
+            return image;
+        }
+
+        private static Image CreateInsetImage(Transform parent, string name, float left, float right, float top, float bottom, Color color, Sprite sprite)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            var rect = go.GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = new Vector2(left, bottom);
+            rect.offsetMax = new Vector2(-right, -top);
+
+            var image = go.GetComponent<Image>();
+            image.color = color;
+            image.sprite = sprite;
+            image.raycastTarget = false;
+            return image;
         }
 
         private Text CreateText(
@@ -1106,6 +1278,11 @@ namespace Pitchr
             text.verticalOverflow = VerticalWrapMode.Overflow;
             text.raycastTarget = false;
 
+            var shadow = go.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.22f);
+            shadow.effectDistance = new Vector2(0f, -2f);
+            shadow.useGraphicAlpha = true;
+
             return text;
         }
 
@@ -1118,11 +1295,29 @@ namespace Pitchr
             text.verticalOverflow = VerticalWrapMode.Truncate;
         }
 
+        private static void ConfigureMultiLineBestFit(Text text, int minSize, int maxSize)
+        {
+            text.resizeTextForBestFit = true;
+            text.resizeTextMinSize = minSize;
+            text.resizeTextMaxSize = maxSize;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Overflow;
+        }
+
         private static void AddOutline(GameObject target, Color color)
         {
             var outline = target.AddComponent<Outline>();
             outline.effectColor = color;
-            outline.effectDistance = new Vector2(4f, -4f);
+            outline.effectDistance = new Vector2(1f, -1f);
+            outline.useGraphicAlpha = true;
+        }
+
+        private static void AddDropShadow(GameObject target, Color color, Vector2 distance)
+        {
+            var shadow = target.AddComponent<Shadow>();
+            shadow.effectColor = color;
+            shadow.effectDistance = distance;
+            shadow.useGraphicAlpha = true;
         }
 
         private static void Stretch(RectTransform rect)
@@ -1145,6 +1340,118 @@ namespace Pitchr
         {
             ColorUtility.TryParseHtmlString(html, out var color);
             return color;
+        }
+
+        private static Texture2D CreateWoodTexture(int width, int height)
+        {
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            var pixels = new Color[width * height];
+            var dark = Hex("#402A1F");
+            var light = Hex("#7A543A");
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var u = x / (float)(width - 1);
+                    var v = y / (float)(height - 1);
+
+                    var plank = Mathf.PerlinNoise((u * 6.4f) + 1.1f, (v * 0.8f) + 2.8f);
+                    var grain = Mathf.PerlinNoise((u * 36f) + (plank * 1.6f), (v * 3.4f) + 9.2f);
+                    var detail = Mathf.PerlinNoise((u * 120f) + 3.3f, (v * 8.5f) + 4.8f);
+                    var tone = Mathf.Clamp01((plank * 0.58f) + (grain * 0.28f) + (detail * 0.14f));
+
+                    var color = Color.Lerp(dark, light, tone);
+                    var warmth = 0.9f + (detail * 0.16f);
+                    pixels[(y * width) + x] = new Color(color.r * warmth, color.g * warmth, color.b * warmth, 1f);
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.wrapMode = TextureWrapMode.Repeat;
+            texture.filterMode = FilterMode.Bilinear;
+            texture.Apply();
+            return texture;
+        }
+
+        private static Texture2D CreateNoiseTexture(int width, int height)
+        {
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            var pixels = new Color[width * height];
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var coarse = Mathf.PerlinNoise((x + 13f) * 0.08f, (y + 29f) * 0.08f);
+                    var detail = Mathf.PerlinNoise((x + 101f) * 0.35f, (y + 53f) * 0.35f);
+                    var value = Mathf.Lerp(0.88f, 1.06f, (coarse * 0.72f) + (detail * 0.28f));
+                    pixels[(y * width) + x] = new Color(value, value, value, 1f);
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+            texture.Apply();
+            return texture;
+        }
+
+        private static Texture2D CreateRadialTexture(int width, int height)
+        {
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            var pixels = new Color[width * height];
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var u = (x / (float)(width - 1) * 2f) - 1f;
+                    var v = (y / (float)(height - 1) * 2f) - 1f;
+                    var distance = Mathf.Sqrt((u * u) + (v * v));
+                    var alpha = Mathf.Clamp01(1f - distance);
+                    alpha = alpha * alpha * (3f - (2f * alpha));
+                    pixels[(y * width) + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+            texture.Apply();
+            return texture;
+        }
+
+        private static Texture2D CreateGlassTexture(int width, int height)
+        {
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            var pixels = new Color[width * height];
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var u = x / (float)(width - 1);
+                    var v = y / (float)(height - 1);
+                    var topGlow = Mathf.Clamp01(1f - Mathf.Abs(v - 0.12f) * 4.5f);
+                    var diagonal = Mathf.Clamp01(1f - Mathf.Abs(u - (0.74f - (v * 0.55f))) * 6.8f);
+                    var lowerFade = Mathf.Clamp01(1f - Mathf.Abs(v - 0.84f) * 5.2f);
+                    var alpha = 0.12f + (topGlow * 0.16f) + (diagonal * 0.18f) + (lowerFade * 0.04f);
+                    var shade = Mathf.Lerp(0.84f, 1f, topGlow * 0.55f);
+                    pixels[(y * width) + x] = new Color(shade, shade, shade, alpha);
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+            texture.Apply();
+            return texture;
+        }
+
+        private static Sprite CreateSprite(Texture2D texture)
+        {
+            return Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), 100f);
         }
 
         private enum GameState
@@ -1295,7 +1602,6 @@ namespace Pitchr
             public InkColor LoadedInk;
             public float TotalProfitMillions;
             public int CurrentTrendIndex;
-            public int PendingTrendSwaps;
             public int NextTrendThresholdIndex;
             public PitchTemplate CurrentPitch;
             public List<PitchTemplate> PitchDeck = new List<PitchTemplate>();
@@ -1317,7 +1623,6 @@ namespace Pitchr
                 IsResolving = false;
                 TotalProfitMillions = 0f;
                 CurrentTrendIndex = 0;
-                PendingTrendSwaps = 0;
                 NextTrendThresholdIndex = 0;
                 CurrentPitch = null;
                 PitchDeck.Clear();
@@ -1330,7 +1635,6 @@ namespace Pitchr
                 IsResolving = false;
                 TotalProfitMillions = 0f;
                 CurrentTrendIndex = 0;
-                PendingTrendSwaps = 0;
                 NextTrendThresholdIndex = 0;
                 CurrentPitch = null;
                 PitchDeck = pitchDeck;
