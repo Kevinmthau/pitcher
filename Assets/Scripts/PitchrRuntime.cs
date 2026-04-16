@@ -217,7 +217,7 @@ namespace Pitchr
 
         private void BuildGameplay(RectTransform parent)
         {
-            CreateText(parent, "GameplayPrompt", "DIP THE ROBOT IN INK, THEN STAMP THE PITCH", 28, FontStyle.Bold, TextAnchor.MiddleCenter, s_Winner, new Vector2(0f, 290f), new Vector2(1200f, 40f));
+            CreateText(parent, "GameplayPrompt", "DIP THE ROBOT IN INK, THEN STAMP THE PITCH", 28, FontStyle.Bold, TextAnchor.MiddleCenter, s_Winner, new Vector2(0f, 356f), new Vector2(1200f, 40f));
 
             BuildGameplayLane(parent, m_Lanes[0], -470f);
             BuildGameplayLane(parent, m_Lanes[1], 470f);
@@ -225,7 +225,15 @@ namespace Pitchr
 
         private void BuildGameplayLane(RectTransform parent, LaneState lane, float x)
         {
-            lane.Root = CreateContainer(parent, $"{lane.Label}Root", new Vector2(x, -18f));
+            const float laneRootY = -140f;
+            const float trendPanelY = 176f;
+            const float pitchCardY = -56f;
+            const float padY = -304f;
+            var trendPanelSize = new Vector2(240f, 112f);
+            var pitchCardSize = new Vector2(520f, 320f);
+            var padSize = new Vector2(230f, 154f);
+
+            lane.Root = CreateContainer(parent, $"{lane.Label}Root", new Vector2(x, laneRootY));
 
             lane.PhonePanel = CreatePanel(lane.Root, "Phone", new Vector2(0f, 360f), new Vector2(360f, 220f), s_Phone);
             AddOutline(lane.PhonePanel.gameObject, s_PhoneGlow);
@@ -236,31 +244,33 @@ namespace Pitchr
             lane.NotificationHeadline = CreateText(lane.PhonePanel, "Headline", "Waiting for the first big release...", 15, FontStyle.Bold, TextAnchor.UpperLeft, s_Cream, new Vector2(0f, -40f), new Vector2(300f, 32f));
             lane.NotificationBody = CreateText(lane.PhonePanel, "Body", "Approvals will send box-office notes here.", 13, FontStyle.Normal, TextAnchor.UpperLeft, s_Slate, new Vector2(0f, -80f), new Vector2(300f, 48f));
 
-            lane.HotPanel = CreatePanel(lane.Root, "HotPanel", new Vector2(-128f, 184f), new Vector2(240f, 120f), Hex("#3A2A21"));
+            lane.HotPanel = CreatePanel(lane.Root, "HotPanel", new Vector2(-128f, trendPanelY), trendPanelSize, Hex("#3A2A21"));
             AddOutline(lane.HotPanel.gameObject, s_Hot);
             lane.HotText = CreateText(lane.HotPanel, "HotText", string.Empty, 19, FontStyle.Bold, TextAnchor.UpperLeft, s_Cream, new Vector2(0f, 0f), new Vector2(188f, 92f));
 
-            lane.NotPanel = CreatePanel(lane.Root, "NotPanel", new Vector2(128f, 184f), new Vector2(240f, 120f), Hex("#1C2740"));
+            lane.NotPanel = CreatePanel(lane.Root, "NotPanel", new Vector2(128f, trendPanelY), trendPanelSize, Hex("#1C2740"));
             AddOutline(lane.NotPanel.gameObject, s_Not);
             lane.NotText = CreateText(lane.NotPanel, "NotText", string.Empty, 19, FontStyle.Bold, TextAnchor.UpperLeft, s_Cream, new Vector2(0f, 0f), new Vector2(188f, 92f));
 
-            lane.PitchCard = CreatePanel(lane.Root, "PitchCard", new Vector2(0f, -12f), new Vector2(520f, 360f), s_Card);
+            lane.PitchCard = CreatePanel(lane.Root, "PitchCard", new Vector2(0f, pitchCardY), pitchCardSize, s_Card);
+            lane.PitchCardHomePosition = lane.PitchCard.anchoredPosition;
             AddOutline(lane.PitchCard.gameObject, s_Cream);
             lane.PitchCanvasGroup = lane.PitchCard.gameObject.AddComponent<CanvasGroup>();
             lane.PitchTitle = CreateText(lane.PitchCard, "Title", "Pitch Title", 34, FontStyle.Bold, TextAnchor.UpperCenter, s_CardInk, new Vector2(0f, 120f), new Vector2(460f, 44f));
+            ConfigureSingleLineBestFit(lane.PitchTitle, minSize: 20, maxSize: 34);
             lane.PitchTags = CreateText(lane.PitchCard, "Tags", "TAGS", 20, FontStyle.Bold, TextAnchor.UpperCenter, s_Slate, new Vector2(0f, 76f), new Vector2(500f, 26f));
             lane.PitchLogline = CreateText(lane.PitchCard, "Logline", "Pitch logline goes here.", 24, FontStyle.Normal, TextAnchor.UpperLeft, s_CardInk, new Vector2(0f, -8f), new Vector2(460f, 106f));
             lane.ActionText = CreateText(lane.PitchCard, "Action", string.Empty, 20, FontStyle.Bold, TextAnchor.LowerCenter, s_CardInk, new Vector2(0f, -112f), new Vector2(380f, 54f));
             lane.StampText = CreateText(lane.PitchCard, "Stamp", string.Empty, 28, FontStyle.Bold, TextAnchor.MiddleCenter, s_Approve, Vector2.zero, new Vector2(320f, 80f));
             lane.StampText.gameObject.SetActive(false);
 
-            lane.RejectPad = CreatePanel(lane.Root, "RejectPad", new Vector2(-128f, -328f), new Vector2(230f, 165f), Hex("#421C27"));
+            lane.RejectPad = CreatePanel(lane.Root, "RejectPad", new Vector2(-128f, padY), padSize, Hex("#421C27"));
             lane.RejectPadImage = lane.RejectPad.GetComponent<Image>();
             AddOutline(lane.RejectPad.gameObject, s_Reject);
             CreateText(lane.RejectPad, "RejectLabel", "RED INK", 28, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 16f), new Vector2(160f, 32f));
             CreateText(lane.RejectPad, "RejectHint", "PASS", 20, FontStyle.Bold, TextAnchor.MiddleCenter, s_Reject, new Vector2(0f, -22f), new Vector2(160f, 24f));
 
-            lane.ApprovePad = CreatePanel(lane.Root, "ApprovePad", new Vector2(128f, -328f), new Vector2(230f, 165f), Hex("#173123"));
+            lane.ApprovePad = CreatePanel(lane.Root, "ApprovePad", new Vector2(128f, padY), padSize, Hex("#173123"));
             lane.ApprovePadImage = lane.ApprovePad.GetComponent<Image>();
             AddOutline(lane.ApprovePad.gameObject, s_Approve);
             CreateText(lane.ApprovePad, "ApproveLabel", "GREEN INK", 28, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 16f), new Vector2(160f, 32f));
@@ -547,7 +557,7 @@ namespace Pitchr
             yield return SlidePitchCard(lane.PitchCard, lane.PitchCanvasGroup, approval ? 540f : -540f);
 
             lane.StampText.gameObject.SetActive(false);
-            lane.PitchCard.anchoredPosition = Vector2.zero;
+            lane.PitchCard.anchoredPosition = lane.PitchCardHomePosition;
             lane.PitchCanvasGroup.alpha = 1f;
 
             if (!m_TimerExpired)
@@ -564,8 +574,8 @@ namespace Pitchr
         {
             const float duration = 0.22f;
             var elapsed = 0f;
-            var start = Vector2.zero;
-            var target = new Vector2(xOffset, 0f);
+            var start = card.anchoredPosition;
+            var target = start + new Vector2(xOffset, 0f);
 
             while (elapsed < duration)
             {
@@ -1099,6 +1109,15 @@ namespace Pitchr
             return text;
         }
 
+        private static void ConfigureSingleLineBestFit(Text text, int minSize, int maxSize)
+        {
+            text.resizeTextForBestFit = true;
+            text.resizeTextMinSize = minSize;
+            text.resizeTextMaxSize = maxSize;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+        }
+
         private static void AddOutline(GameObject target, Color color)
         {
             var outline = target.AddComponent<Outline>();
@@ -1251,6 +1270,7 @@ namespace Pitchr
             public RectTransform RejectPad;
             public RectTransform ApprovePad;
             public RectTransform ResultsCard;
+            public Vector2 PitchCardHomePosition;
 
             public Image RejectPadImage;
             public Image ApprovePadImage;
@@ -1317,6 +1337,8 @@ namespace Pitchr
                 ApprovedOutcomes.Clear();
                 NotificationHeadline.text = "Waiting for the first big release...";
                 NotificationBody.text = "Approvals will send box-office notes here.";
+                PitchCard.anchoredPosition = PitchCardHomePosition;
+                PitchCanvasGroup.alpha = 1f;
                 StampText.gameObject.SetActive(false);
             }
         }
