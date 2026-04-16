@@ -227,14 +227,14 @@ namespace Pitchr
         {
             lane.Root = CreateContainer(parent, $"{lane.Label}Root", new Vector2(x, -18f));
 
-            lane.PhonePanel = CreatePanel(lane.Root, "Phone", new Vector2(0f, 360f), new Vector2(360f, 180f), s_Phone);
+            lane.PhonePanel = CreatePanel(lane.Root, "Phone", new Vector2(0f, 360f), new Vector2(360f, 220f), s_Phone);
             AddOutline(lane.PhonePanel.gameObject, s_PhoneGlow);
-            CreateText(lane.PhonePanel, "PhoneLabel", lane.Label, 18, FontStyle.Bold, TextAnchor.UpperCenter, s_Slate, new Vector2(0f, 70f), new Vector2(240f, 24f));
-            CreateText(lane.PhonePanel, "RobotBadge", lane.StamperName, 18, FontStyle.Bold, TextAnchor.MiddleCenter, lane.StamperColor, new Vector2(0f, 46f), new Vector2(240f, 24f));
-            lane.TimerText = CreateText(lane.PhonePanel, "Timer", "1:00", 44, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 28f), new Vector2(240f, 50f));
-            lane.ProfitText = CreateText(lane.PhonePanel, "Profit", "NET $0.0M", 22, FontStyle.Bold, TextAnchor.MiddleCenter, s_Winner, new Vector2(0f, -12f), new Vector2(280f, 30f));
-            lane.NotificationHeadline = CreateText(lane.PhonePanel, "Headline", "Waiting for the first big release...", 18, FontStyle.Bold, TextAnchor.UpperLeft, s_Cream, new Vector2(0f, -54f), new Vector2(300f, 32f));
-            lane.NotificationBody = CreateText(lane.PhonePanel, "Body", "Approvals will send box-office notes here.", 16, FontStyle.Normal, TextAnchor.UpperLeft, s_Slate, new Vector2(0f, -92f), new Vector2(300f, 58f));
+            CreateText(lane.PhonePanel, "PhoneLabel", lane.Label, 14, FontStyle.Bold, TextAnchor.UpperCenter, s_Slate, new Vector2(0f, 92f), new Vector2(240f, 20f));
+            CreateText(lane.PhonePanel, "RobotBadge", lane.StamperName, 16, FontStyle.Bold, TextAnchor.MiddleCenter, lane.StamperColor, new Vector2(0f, 68f), new Vector2(240f, 20f));
+            lane.TimerText = CreateText(lane.PhonePanel, "Timer", "1:00", 36, FontStyle.Bold, TextAnchor.MiddleCenter, s_Cream, new Vector2(0f, 32f), new Vector2(240f, 44f));
+            lane.ProfitText = CreateText(lane.PhonePanel, "Profit", "NET $0.0M", 18, FontStyle.Bold, TextAnchor.MiddleCenter, s_Winner, new Vector2(0f, -6f), new Vector2(280f, 24f));
+            lane.NotificationHeadline = CreateText(lane.PhonePanel, "Headline", "Waiting for the first big release...", 15, FontStyle.Bold, TextAnchor.UpperLeft, s_Cream, new Vector2(0f, -40f), new Vector2(300f, 32f));
+            lane.NotificationBody = CreateText(lane.PhonePanel, "Body", "Approvals will send box-office notes here.", 13, FontStyle.Normal, TextAnchor.UpperLeft, s_Slate, new Vector2(0f, -80f), new Vector2(300f, 48f));
 
             lane.HotPanel = CreatePanel(lane.Root, "HotPanel", new Vector2(-128f, 184f), new Vector2(240f, 120f), Hex("#3A2A21"));
             AddOutline(lane.HotPanel.gameObject, s_Hot);
@@ -247,9 +247,9 @@ namespace Pitchr
             lane.PitchCard = CreatePanel(lane.Root, "PitchCard", new Vector2(0f, -12f), new Vector2(520f, 360f), s_Card);
             AddOutline(lane.PitchCard.gameObject, s_Cream);
             lane.PitchCanvasGroup = lane.PitchCard.gameObject.AddComponent<CanvasGroup>();
-            lane.PitchTitle = CreateText(lane.PitchCard, "Title", "Pitch Title", 34, FontStyle.Bold, TextAnchor.UpperCenter, s_CardInk, new Vector2(0f, 108f), new Vector2(400f, 40f));
-            lane.PitchTags = CreateText(lane.PitchCard, "Tags", "TAGS", 20, FontStyle.Bold, TextAnchor.UpperCenter, s_Slate, new Vector2(0f, 66f), new Vector2(400f, 26f));
-            lane.PitchLogline = CreateText(lane.PitchCard, "Logline", "Pitch logline goes here.", 24, FontStyle.Normal, TextAnchor.UpperLeft, s_CardInk, new Vector2(0f, 6f), new Vector2(392f, 126f));
+            lane.PitchTitle = CreateText(lane.PitchCard, "Title", "Pitch Title", 34, FontStyle.Bold, TextAnchor.UpperCenter, s_CardInk, new Vector2(0f, 120f), new Vector2(460f, 44f));
+            lane.PitchTags = CreateText(lane.PitchCard, "Tags", "TAGS", 20, FontStyle.Bold, TextAnchor.UpperCenter, s_Slate, new Vector2(0f, 76f), new Vector2(500f, 26f));
+            lane.PitchLogline = CreateText(lane.PitchCard, "Logline", "Pitch logline goes here.", 24, FontStyle.Normal, TextAnchor.UpperLeft, s_CardInk, new Vector2(0f, -8f), new Vector2(460f, 106f));
             lane.ActionText = CreateText(lane.PitchCard, "Action", string.Empty, 20, FontStyle.Bold, TextAnchor.LowerCenter, s_CardInk, new Vector2(0f, -112f), new Vector2(380f, 54f));
             lane.StampText = CreateText(lane.PitchCard, "Stamp", string.Empty, 28, FontStyle.Bold, TextAnchor.MiddleCenter, s_Approve, Vector2.zero, new Vector2(320f, 80f));
             lane.StampText.gameObject.SetActive(false);
